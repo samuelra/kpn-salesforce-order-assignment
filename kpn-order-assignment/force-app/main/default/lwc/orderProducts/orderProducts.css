@@ -1,0 +1,8 @@
+.slds-alert_success {
+    background-color: #ecfaec;
+    border-left: 4px solid #04844b;
+}
+
+.slds-text-color_success {
+    color: #04844b;
+}

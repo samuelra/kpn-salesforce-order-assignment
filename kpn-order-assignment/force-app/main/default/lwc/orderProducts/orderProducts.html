@@ -1,0 +1,82 @@
+<template>
+    <lightning-card title={cardTitle} icon-name="standard:orders">
+        <!-- Header Actions - Activate Button -->
+        <div slot="actions">
+            <lightning-button label={activateButtonLabel} variant={activateButtonVariant} onclick={handleActivateOrder}
+                disabled={isActivateButtonDisabled} icon-name="utility:check"></lightning-button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Loading order products..." size="small"></lightning-spinner>
+        </template>
+
+        <!-- Error Message -->
+        <template if:true={error}>
+            <div class="slds-m-around_medium">
+                <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                    <span class="slds-assistive-text">Error</span>
+                    <h2>
+                        <lightning-icon icon-name="utility:error" size="x-small" alternative-text="Error"
+                            class="slds-m-right_x-small"></lightning-icon>
+                        {error}
+                    </h2>
+                </div>
+            </div>
+        </template>
+
+        <!-- Activation Status Banner -->
+        <template if:true={isActivated}>
+            <div class="slds-m-around_medium">
+                <div class="slds-notify slds-notify_alert slds-alert_success" role="status">
+                    <span class="slds-assistive-text">Success</span>
+                    <h2>
+                        <lightning-icon icon-name="utility:success" size="x-small" alternative-text="Success"
+                            class="slds-m-right_x-small"></lightning-icon>
+                        This order has been activated and cannot be modified.
+                    </h2>
+                </div>
+            </div>
+        </template>
+
+        <!-- Order Products Datatable -->
+        <template if:true={hasOrderItems}>
+            <div class="slds-m-around_medium">
+                <lightning-datatable key-field="orderItemId" data={orderItems} columns={columns} hide-checkbox-column
+                    show-row-number-column min-column-width="120" max-column-width="400">
+                </lightning-datatable>
+
+                <!-- Total Amount Footer -->
+                <div class="slds-grid slds-grid_align-end slds-m-top_medium">
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-box slds-theme_shade slds-text-align_right">
+                            <p class="slds-text-heading_small">
+                                <strong>Total Amount:</strong>
+                            </p>
+                            <p class="slds-text-heading_large slds-text-color_success">
+                                {formattedTotal}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- No Products Message -->
+        <template if:false={hasOrderItems}>
+            <template if:false={error}>
+                <template if:false={isLoading}>
+                    <div class="slds-m-around_medium slds-text-align_center">
+                        <lightning-icon icon-name="utility:info" size="small" alternative-text="Info"></lightning-icon>
+                        <p class="slds-m-top_small">
+                            No products added to this order yet.
+                        </p>
+                        <p class="slds-text-color_weak slds-m-top_x-small">
+                            Use the "Available Products" component to add products.
+                        </p>
+                    </div>
+                </template>
+            </template>
+        </template>
+    </lightning-card>
+</template>

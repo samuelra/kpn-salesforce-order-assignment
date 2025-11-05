@@ -1,0 +1,79 @@
+<template>
+    <lightning-card title="Available Products" icon-name="standard:product">
+        <!-- Product Stats -->
+        <div slot="actions">
+            <template if:true={showStats}>
+                <lightning-badge label={productStats}></lightning-badge>
+            </template>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="slds-m-around_medium">
+            <div class="slds-grid slds-gutters slds-wrap">
+                <!-- Search -->
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                    <lightning-input type="search" label="Search Products"
+                        placeholder="Search by name, code, category, or brand..." value={searchTerm}
+                        onchange={handleSearch}></lightning-input>
+                </div>
+
+                <!-- Include External Toggle -->
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
+                    <div class="slds-form-element slds-m-top_large">
+                        <lightning-input type="checkbox" label="Include External API Products" checked={includeExternal}
+                            onchange={handleToggleExternal}></lightning-input>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <template if:true={error}>
+            <div class="slds-m-around_medium">
+                <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                    <span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small">
+                        <lightning-icon icon-name="utility:error" size="x-small" variant="inverse"></lightning-icon>
+                    </span>
+                    <h2>{error}</h2>
+                </div>
+            </div>
+        </template>
+
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Loading products..." size="medium"></lightning-spinner>
+        </template>
+
+        <!-- Products Table -->
+        <template if:true={hasProducts}>
+            <lightning-datatable key-field="productId" data={pagedProducts} columns={columns}
+                onrowaction={handleRowAction} hide-checkbox-column></lightning-datatable>
+            <div class="slds-m-around_medium slds-grid slds-grid_align-spread slds-align_absolute-center">
+                <div>
+                    Showing {startRecord}–{endRecord} of {totalRecords} products
+                </div>
+                <div>
+                    <lightning-button label="Previous" variant="neutral" onclick={handlePrevPage} disabled={isFirstPage}
+                        class="slds-m-right_small"></lightning-button>
+                    <span>Page {currentPage} of {totalPages}</span>
+                    <lightning-button label="Next" variant="neutral" onclick={handleNextPage} disabled={isLastPage}
+                        class="slds-m-left_small"></lightning-button>
+                </div>
+            </div>
+
+
+        </template>
+
+        <!-- No Products Message -->
+        <template if:false={hasProducts}>
+            <template if:false={error}>
+                <template if:false={isLoading}>
+                    <div class="slds-m-around_medium slds-text-align_center">
+                        <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                        <p class="slds-m-top_small">{noProductsMessage}</p>
+                    </div>
+                </template>
+            </template>
+        </template>
+    </lightning-card>
+</template>

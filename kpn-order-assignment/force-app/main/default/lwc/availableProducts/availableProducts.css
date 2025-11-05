@@ -1,0 +1,16 @@
+.slds-is-selected {
+    background-color: #f3f2f2;
+}
+
+.slds-text-color_success {
+    color: #04844b;
+    font-weight: bold;
+}
+
+.kpn-pill {
+    background: #e5e5e5;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}

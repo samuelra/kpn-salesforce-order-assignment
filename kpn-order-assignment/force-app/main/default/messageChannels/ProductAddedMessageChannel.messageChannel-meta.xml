@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningMessageChannel xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>Product Added Message Channel</masterLabel>
+    <isExposed>true</isExposed>
+    <description>Notify other LWCs when a product is added to an order</description>
+
+    <lightningMessageFields>
+        <fieldName>productId</fieldName>
+        <description>Product that was added</description>
+    </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>orderItemId</fieldName>
+        <description>Order Item that was created/updated</description>
+    </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>orderId</fieldName>
+        <description>Order to refresh</description>
+    </lightningMessageFields>
+</LightningMessageChannel>
