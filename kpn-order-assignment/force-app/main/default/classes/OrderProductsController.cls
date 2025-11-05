@@ -3,6 +3,7 @@
  *               - fetches order line items
  *               - activates the order
  *               - kicks off the external order sync
+ *               - (new) removes an order line when order is still Draft
  *               All exceptions are wrapped as AuraHandledException for the UI.
  * @author Samuel R
  * @since 2025-11
@@ -21,12 +22,10 @@ public with sharing class OrderProductsController {
     public static List<OrderService.OrderItemWrapper> getOrderProducts(Id orderId) {
         try {
             if (Test.isRunningTest() && forceFailGetOrderProducts) {
-                // must throw a constructible exception, not plain Exception
                 throw new AuraHandledException('Forced test exception - getOrderProducts');
             }
             return OrderService.getOrderProducts(orderId);
         } catch (Exception e) {
-            // now the catch will be coverable
             throw new AuraHandledException('Error in getOrderProducts: ' + e.getMessage());
         }
     }
@@ -67,6 +66,55 @@ public with sharing class OrderProductsController {
             return OrderService.isOrderActivated(orderId);
         } catch (Exception e) {
             throw new AuraHandledException('Error in isOrderActivated: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * @description Remove a single OrderItem from the order
+     *              – allowed only when the parent order is NOT Activated.
+     * @param orderItemId Id of the order line to delete
+     */
+    @AuraEnabled
+    public static OrderService.OperationResult removeOrderItem(Id orderItemId) {
+        try {
+            if (orderItemId == null) {
+                return new OrderService.OperationResult(false, 'Order Item Id is required', null);
+            }
+
+            // load the order item + parent order
+            OrderItem oi = [
+                SELECT Id, OrderId
+                FROM OrderItem
+                WHERE Id = :orderItemId
+                LIMIT 1
+            ];
+
+            Order parentOrder = [
+                SELECT Id, Status
+                FROM Order
+                WHERE Id = :oi.OrderId
+                LIMIT 1
+            ];
+
+            // block if activated
+            if (parentOrder.Status == OrderManagementConstants.ORDER_STATUS_ACTIVATED) {
+                return new OrderService.OperationResult(
+                    false,
+                    'Cannot remove products from an activated order',
+                    null
+                );
+            }
+
+            delete oi;
+
+            return new OrderService.OperationResult(
+                true,
+                'Product removed from order',
+                null
+            );
+        } catch (Exception e) {
+            // keep the same error style as other methods
+            throw new AuraHandledException('Error in removeOrderItem: ' + e.getMessage());
         }
     }
 }

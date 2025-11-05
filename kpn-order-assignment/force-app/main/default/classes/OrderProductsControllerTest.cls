@@ -187,4 +187,40 @@ private class OrderProductsControllerTest {
         }
     }
     
+    @IsTest
+    static void test_removeOrderItem_success() {
+        // arrange
+        Map<String, Id> data = createOrderGraph();
+        Id orderItemId = data.get('orderItemId');
+        
+        // act
+        Test.startTest();
+        OrderService.OperationResult res =
+            OrderProductsController.removeOrderItem(orderItemId);
+        Test.stopTest();
+        
+        // assert
+        System.assertEquals(true, res.success, 'Should succeed removing existing order item');
+        
+        // make sure it’s actually gone
+        Integer countAfter = [
+            SELECT COUNT()
+            FROM OrderItem
+            WHERE Id = :orderItemId
+        ];
+        System.assertEquals(0, countAfter, 'Order item should be deleted from DB');
+    }
+    
+    @IsTest
+    static void test_removeOrderItem_missingId() {
+        Test.startTest();
+        OrderService.OperationResult res =
+            OrderProductsController.removeOrderItem(null);
+        Test.stopTest();
+        
+        System.assertEquals(false, res.success, 'Should fail when id is missing');
+        System.assert(res.message.contains('required') || res.message.contains('ID'),
+        'Message should tell caller ID is required');
+    }
+    
 }

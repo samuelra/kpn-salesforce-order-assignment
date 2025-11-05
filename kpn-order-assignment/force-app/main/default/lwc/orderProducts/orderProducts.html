@@ -43,7 +43,7 @@
         <template if:true={hasOrderItems}>
             <div class="slds-m-around_medium">
                 <lightning-datatable key-field="orderItemId" data={orderItems} columns={columns} hide-checkbox-column
-                    show-row-number-column min-column-width="120" max-column-width="400">
+                    show-row-number-column min-column-width="120" max-column-width="400" onrowaction={handleRowAction}>
                 </lightning-datatable>
 
                 <!-- Total Amount Footer -->

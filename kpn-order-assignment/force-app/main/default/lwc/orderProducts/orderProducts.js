@@ -4,10 +4,10 @@ import { refreshApex } from '@salesforce/apex';
 import getOrderProducts from '@salesforce/apex/OrderProductsController.getOrderProducts';
 import activateOrder from '@salesforce/apex/OrderProductsController.activateOrder';
 import isOrderActivated from '@salesforce/apex/OrderProductsController.isOrderActivated';
+import removeOrderItem from '@salesforce/apex/OrderProductsController.removeOrderItem';
 import { subscribe, unsubscribe, MessageContext } from 'lightning/messageService';
 import PRODUCT_ADDED_CHANNEL from '@salesforce/messageChannel/ProductAddedMessageChannel__c';
 import { NavigationMixin } from 'lightning/navigation';
-
 
 export default class OrderProducts extends NavigationMixin(LightningElement) {
     @api recordId;
@@ -68,6 +68,16 @@ export default class OrderProducts extends NavigationMixin(LightningElement) {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }
+        },
+        {
+            type: 'button',
+            initialWidth: 120,
+            typeAttributes: {
+                label: 'Remove',
+                name: 'remove',
+                variant: 'destructive',
+                disabled: { fieldName: 'removeDisabled' }
+            }
         }
     ];
 
@@ -81,7 +91,6 @@ export default class OrderProducts extends NavigationMixin(LightningElement) {
             }
         });
     }
-
 
     connectedCallback() {
         this.checkOrderActivationStatus();
@@ -101,18 +110,15 @@ export default class OrderProducts extends NavigationMixin(LightningElement) {
 
     handleProductAddedMessage(message) {
         if (message && message.orderId === this.recordId) {
-            // refresh data table
             window.setTimeout(() => {
                 this.refreshOrderProducts();
             }, 0);
 
-            // and refresh the whole record view so all panels stay in sync
             window.setTimeout(() => {
                 this.refreshCurrentRecordView();
-            }, 400); // small delay so the insert finishes
+            }, 400);
         }
     }
-
 
     disconnectedCallback() {
         if (this.subscription) {
@@ -121,14 +127,14 @@ export default class OrderProducts extends NavigationMixin(LightningElement) {
         }
     }
 
-
     @wire(getOrderProducts, { orderId: '$recordId' })
     wiredOrderItems(result) {
         this.wiredOrderItemsResult = result;
         const { data, error } = result;
 
         if (data) {
-            this.orderItems = data;
+            // decorate rows so the Remove button can be disabled when order is activated
+            this.orderItems = this.decorateRows(data);
             this.error = undefined;
         } else if (error) {
             this.error = this.getErrorMessage(error);
@@ -137,6 +143,7 @@ export default class OrderProducts extends NavigationMixin(LightningElement) {
         }
     }
 
+    // keep your async activation check
     async checkOrderActivationStatus() {
         if (!this.recordId) {
             return;
@@ -144,7 +151,13 @@ export default class OrderProducts extends NavigationMixin(LightningElement) {
 
         try {
             this.isActivated = await isOrderActivated({ orderId: this.recordId });
+            // re-decorate rows if we already have them
+            if (this.orderItems && this.orderItems.length) {
+                this.orderItems = this.decorateRows(this.orderItems);
+            }
         } catch (error) {
+            // just log
+            // eslint-disable-next-line no-console
             console.error('Error checking activation status:', error);
         }
     }
@@ -153,6 +166,12 @@ export default class OrderProducts extends NavigationMixin(LightningElement) {
         if (this.wiredOrderItemsResult) {
             this.isLoading = true;
             refreshApex(this.wiredOrderItemsResult)
+                .then(() => {
+                    // after refresh, we may need to re-disable remove
+                    if (this.orderItems && this.orderItems.length) {
+                        this.orderItems = this.decorateRows(this.orderItems);
+                    }
+                })
                 .finally(() => {
                     this.isLoading = false;
                 });
@@ -196,6 +215,45 @@ export default class OrderProducts extends NavigationMixin(LightningElement) {
 
     refreshPage() {
         window.location.reload();
+    }
+    
+    async handleRowAction(event) {
+        const actionName = event.detail.action.name;
+        const row = event.detail.row;
+
+        if (actionName === 'remove') {
+            // if for some reason it wasn’t disabled in the UI
+            if (this.isActivated) {
+                this.showToast('Warning', 'Cannot remove products from an activated order', 'warning');
+                return;
+            }
+
+            this.isLoading = true;
+            try {
+                const res = await removeOrderItem({ orderItemId: row.orderItemId });
+                if (res && res.success) {
+                    this.showToast('Success', res.message, 'success');
+                    this.refreshOrderProducts();
+                    this.refreshCurrentRecordView();
+                } else {
+                    this.showToast('Error', res ? res.message : 'Unable to remove product', 'error');
+                }
+            } catch (error) {
+                this.showToast('Error removing product', this.getErrorMessage(error), 'error');
+            } finally {
+                this.isLoading = false;
+            }
+        }
+    }
+
+    // helper to add removeDisabled
+    decorateRows(data) {
+        return data.map(item => {
+            return {
+                ...item,
+                removeDisabled: this.isActivated
+            };
+        });
     }
 
     getErrorMessage(error) {
